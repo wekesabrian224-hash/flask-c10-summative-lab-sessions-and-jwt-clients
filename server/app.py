@@ -37,5 +37,41 @@ class Signup(Resource):
 api.add_resource(Signup, "/signup", endpoint="signup")
 
 
+
+class Login(Resource):
+    def post(self):
+        data = request.get_json() or {}
+        user = User.query.filter_by(username=data.get("username")).first()
+
+        if user and user.authenticate(data.get("password") or ""):
+            session["user_id"] = user.id
+            return {"id": user.id, "username": user.username}, 200
+
+        return {"errors": ["Invalid username or password."]}, 401
+
+
+class CheckSession(Resource):
+    def get(self):
+        user_id = session.get("user_id")
+        user = db.session.get(User, user_id) if user_id else None
+
+        if user:
+            return {"id": user.id, "username": user.username}, 200
+
+        return {}, 200
+
+
+class Logout(Resource):
+    def delete(self):
+        session.pop("user_id", None)
+        return {}, 200
+
+
+api.add_resource(Login, "/login", endpoint="login")
+api.add_resource(CheckSession, "/check_session", endpoint="check_session")
+api.add_resource(Logout, "/logout", endpoint="logout")
+
+
+
 if __name__ == "__main__":
     app.run(port=5555, debug=True)
